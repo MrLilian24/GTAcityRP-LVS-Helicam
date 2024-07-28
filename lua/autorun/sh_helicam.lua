@@ -158,22 +158,27 @@ net.Receive("SendLicensePlate", function(len)
 	plate = net.ReadString()
 end)
 
+
+local lastPlateRequest = 0
+local plateRequestCooldown = 3 -- délai en secondes entre les requêtes (anti-spam)
+
 -- Affiche le informations du véhicule (Nom, vitesse et plaque)
 --! MODIFIED
 local function DrawVehicleInfo()
-	if helicam and entVis:IsVehicle() then
+	if helicam and IsValid(entVis) and entVis:IsVehicle() then
 		local veh = entVis
 		local ply = LocalPlayer()
 		local vehClass = veh:GetVehicleClass()
 		local vehName = list.Get("Vehicles")[vehClass].Name
 		local vehSpeed = math.Round(veh:GetVelocity():Length() * 0.0568182)
 
-		-- Appeler la fonction GetLicensePlate avec le joueur, le véhicule et la fonction de rappel
-		--TODO Limiter le nombre d'appels
-		net.Start("RequestVehiclePlate")
-        net.WriteEntity(ply)
-        net.WriteEntity(veh)
-        net.SendToServer()
+		if CurTime() - lastPlateRequest > plateRequestCooldown then
+            net.Start("RequestVehiclePlate")
+            net.WriteEntity(ply)
+            net.WriteEntity(veh)
+            net.SendToServer()
+            lastPlateRequest = CurTime()
+        end
 
 		draw.SimpleTextOutlined("Modèle: " .. vehName, "HeliCamAnnexe2", ScrW() / 2 - 75, ScrH() - 80, Color(255, 255, 255, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0, 255))
 		draw.SimpleTextOutlined("Vitesse: " .. vehSpeed .. " MPH", "HeliCamAnnexe2", ScrW() / 2 - 75, ScrH() - 50, Color(255, 255, 255, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, 1, Color(0, 0, 0, 255))
