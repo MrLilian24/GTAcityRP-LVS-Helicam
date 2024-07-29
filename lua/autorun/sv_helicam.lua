@@ -1,8 +1,8 @@
 -- sv_helicam.lua - Server side
 -- Created by Rémi.L (https://steamcommunity.com/id/lilian24)
 
-util.AddNetworkString("RequestVehiclePlate")
 util.AddNetworkString("SendLicensePlate")
+util.AddNetworkString("RequestVehiclePlate")
 
 local PLATE = LL_PLATES_SYSTEM or {}
 
