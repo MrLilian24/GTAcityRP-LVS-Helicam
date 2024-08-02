@@ -7,12 +7,15 @@ local scanning = false
 local scanComplete = false
 local lastScannedVehicle = nil
 local plate = "Unknown"
+
 local zoom, zoomMax, zoomMin, zoomSpeed = 0, 72, 0, 0.4
 local rot, rotSpeed = 0, 0.2
 local rotV, rotVMax, rotVMin, rotSpeed = 0, 60, -20, 0.2
+
 local rotateSoundH, rotateSoundV, zoomSound = nil, nil, nil
-local minSpeedFactor = 0.05
---local flirMode = false
+
+local minSpeedFactor = 0.05 -- Avoid too rapid movements when zoomed in
+local flirMode = false
 
 surface.CreateFont("HeliCamLogo", {font = "Arial", extended = false, size = 72, weight = 1200})
 surface.CreateFont("HeliCamLegend", {font = "Arial", extended = false, size = 28, weight = 1200})
@@ -22,19 +25,21 @@ surface.CreateFont("HeliCamAnnexe2", {font = "DermaDefault", extended = false, s
 surface.CreateFont("HeliCamAnnexe3", {font = "Roboto", extended = false, size = 20, weight = 600})
 surface.CreateFont("HeliCamAnnexe4", {font = "Arial", extended = false, size = 16, weight = 600})
 
+-- Beggin the scan of a vehicle
 local function StartScan()
     if IsValid(entVis) and entVis:IsVehicle() then
-        if entVis == lastScannedVehicle then return end
+        if entVis == lastScannedVehicle then return end -- Avoid rescan the same vehicle
 
         scanning = true
         scanComplete = false
         lastScannedVehicle = entVis
-        surface.PlaySound("ambient/levels/labs/electric_explosion1.wav")
+        --surface.PlaySound("ambient/levels/labs/electric_explosion1.wav")
 
+        -- Wait 3 seconds before the scan is complete
         timer.Simple(3, function()
             scanning = false
             scanComplete = true
-            surface.PlaySound("ambient/levels/labs/electric_explosion1.wav")
+            --surface.PlaySound("ambient/levels/labs/electric_explosion1.wav")
         end)
     end
 end
@@ -65,10 +70,6 @@ local function HandleZoom()
             zoomSound = nil
         end
     end
-
-    if zoomChanged then
-        print("Zoom : " .. zoom)
-    end
 end
 
 -- Horizontal rotation of the camera
@@ -98,10 +99,6 @@ local function HandleRotation()
             rotateSoundH = nil
         end
     end
-
-    if rotChanged then
-        print("Rotation : " .. rot)
-    end
 end
 
 -- Vertical rotation of the camera
@@ -129,12 +126,9 @@ local function HandleVerticalMovement()
             rotateSoundV = nil
         end
     end
-
-    if rotVChanged then
-        print("Rotation verticale : " .. rotV)
-    end
 end
 
+-- All the vehicle's data
 local function DrawVehicleInfo(veh)
     if helicam and IsValid(veh) and veh:IsVehicle() then
         local ply = LocalPlayer()
@@ -158,6 +152,7 @@ local function DrawVehicleInfo(veh)
     end
 end
 
+-- Show the direction on the UI
 local function DrawDirection()
     local heliAngles = LocalPlayer():GetAngles()
     local direction = GetDirection(heliAngles.y)
@@ -174,6 +169,7 @@ local function DrawDirection()
     surface.DrawText("GPS: " .. gpsCoordinates)
 end
 
+-- Handle all the inputs for the camera
 local function GetInput()
     HandleZoom()
     HandleRotation()
@@ -185,6 +181,7 @@ local function ToggleHeliCam(ply)
     if helicam then
         RunConsoleCommand("cl_drawhud", "0") -- Disable default HUD
         local heli = ply:GetVehicle():GetParent()
+        -- Hook to draw the camera interface
         hook.Add("HUDPaint", "DrawHeliCam", function()
             if helicam then
                 GetInput()
@@ -216,6 +213,7 @@ local function ToggleHeliCam(ply)
                 }
                 surface.DrawPoly(points)
 
+                -- Middle camera crosshair
                 draw.SimpleText("x", "MiddleCross", screenW / 2, screenH / 2, Color(225, 225, 225), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
                 surface.SetDrawColor(255, 255, 255, 155)
                 surface.DrawRect(screenW / 2 - 260, screenH / 2, 160, 2)
@@ -235,10 +233,12 @@ local function ToggleHeliCam(ply)
                 surface.DrawRect(screenW / 2 + 182, screenH / 2 + 140, 24, 2)
                 surface.DrawRect(screenW / 2 + 204, screenH / 2 + 127, 2, 14)
 
+                -- Live date and time
                 draw.SimpleText(os.date("%d/%m/%y"), "HeliCamAnnexe3", 30, textY - 74, Color(225, 225, 225, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
                 draw.SimpleText(os.date("%H:%M:%S"), "HeliCamAnnexe3", 30, textY - 55, Color(225, 225, 225, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
                 draw.SimpleText("UTC " .. os.date("%z"), "HeliCamAnnexe3", 30, textY - 36, Color(225, 225, 225, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
 
+                -- 3 buttons
                 surface.SetDrawColor(225, 225, 225, 50)
                 surface.DrawRect(screenW / 2 - 246, 4, 92, 47)
                 surface.SetDrawColor(225, 225, 225, 50)
@@ -291,11 +291,10 @@ local function ToggleHeliCam(ply)
         end)
 
         hook.Add("CalcView", "HeliCamView", function(ply, pos, angles, fov)
-            print("CalcView Hook Triggered")
             if helicam then
-                print("Helicam is active")
                 local view = {}
-                view.origin = heli:GetPos() + Vector(0, 0, 100)
+                -- Camera position (for the AS350 only)
+                view.origin = heli:LocalToWorld(Vector(25.15, 26.65, 14.25))
                 view.angles = Angle(0, heli:GetAngles().y + rot, 0) + Angle(rotV, 0, 0)
                 view.fov = fov - zoom
 
@@ -321,26 +320,30 @@ local function ToggleHeliCam(ply)
     end
 end
 
+-- Request license plate of the vehicle
 net.Receive("SendLicensePlate", function(len)
     plate = net.ReadString()
 end)
 
-/*
+-- Ensure the camera is disabled when the player exits the helicopter
 hook.Add("Think", "CheckHelicamExit", function()
     local ply = LocalPlayer()
     if helicam and !ply:InVehicle() then
         ToggleHeliCam(ply)
     end
 end)
-*/
 
 concommand.Add("lvs_helicam", function(ply)
-    if IsInHeli(ply) then
+    local vehicle = ply:GetVehicle()
+
+    -- Restrict helicam to the AS350 (lvs_as350)
+    if IsInHeli(ply) and vehicle:GetParent():GetClass() == "lvs_as350" then
         ToggleHeliCam(ply)
     end
 end)
 
-/*
+/* DO NOT DELETE -- Commented code for future use
+
 hook.Add("PlayerButtonDown", "ToggleFLIR", function(ply, key)
     if key == KEY_F then
         flirMode = !flirMode

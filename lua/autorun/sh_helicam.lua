@@ -1,6 +1,7 @@
 -- sh_helicam.lua - Shared
 -- Created by Rémi.L (https://steamcommunity.com/id/lilian24)
 
+-- Get direction from an angle (driver seat = direction of the heli)
 function GetDirection(angle)
     local directions = {
         {0, "N ↑"},
@@ -13,6 +14,7 @@ function GetDirection(angle)
         {-45, "NW ↖"}
     }
 
+    -- Get the closest corresponding direction
     for _, dir in ipairs(directions) do
         if math.abs(angle - dir[1]) <= 22.5 then
             return dir[2]
@@ -22,23 +24,7 @@ function GetDirection(angle)
     return ""
 end
 
-function RotatePoint(x, y, centerX, centerY, angle)
-    local radians = math.rad(angle)
-    local cosTheta = math.cos(radians)
-    local sinTheta = math.sin(radians)
-
-    local translatedX = x - centerX
-    local translatedY = y - centerY
-
-    local rotatedX = translatedX * cosTheta - translatedY * sinTheta
-    local rotatedY = translatedX * sinTheta + translatedY * cosTheta
-
-    local finalX = rotatedX + centerX
-    local finalY = rotatedY + centerY
-
-    return finalX, finalY
-end
-
+-- Check if a player is in an valid helicopter
 function IsInHeli(ply)
-    return ply and ply:GetVehicle():GetParent().Base:find("lvs_base")
+    return ply and ply:GetVehicle():GetParent().Base:find("lvs_base") 
 end
