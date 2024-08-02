@@ -11,7 +11,7 @@ __Dépendances:__
 __Fonctionnalités:__
 - ✅ Caméra mobile sur l'axe horizontal et vertical.
 - ✅ Zoom (x1 - x32).
-- [ ] Vision infrarouge (FLIR) pour voir aussi bien dans la rue que dans un habitacle de voiture ou à travers une fenêtre.
+- ✖️ Vision infrarouge (FLIR) pour voir aussi bien dans la rue que dans un habitacle de voiture ou à travers une fenêtre.
 - ✅ Calcul de la vitesse en MPH pour les véhicules.
 - ✅ Lecteur de plaque (affichage de la marque/modèle du véhicule et sa plaque d'immatriculation).
 
